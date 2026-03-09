@@ -22,12 +22,15 @@
     <string>1</string>
     <key>NSExtension</key>
     <dict>
+        <key>NSExtensionAttributes</key>
+        <dict>
+            <key>ILMessageFilterExtensionNetworkURL</key>
+            <string>https://spendtracker.gauravkrp.com/api/filter-sms</string>
+        </dict>
         <key>NSExtensionPointIdentifier</key>
         <string>com.apple.identitylookup.message-filter</string>
         <key>NSExtensionPrincipalClass</key>
         <string>$(PRODUCT_MODULE_NAME).MessageFilterExtension</string>
     </dict>
-    <key>ILMessageFilterExtensionNetworkURL</key>
-    <string>https://spendtracker.gauravkrp.com/api/filter-sms</string>
 </dict>
 </plist>
