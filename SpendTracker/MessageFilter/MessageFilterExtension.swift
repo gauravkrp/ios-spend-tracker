@@ -23,25 +23,8 @@ extension MessageFilterExtension: ILMessageFilterQueryHandling {
         context: ILMessageFilterExtensionContext,
         completion: @escaping (ILMessageFilterQueryResponse) -> Void
     ) {
-        let sender = queryRequest.sender ?? ""
-        let body = queryRequest.messageBody ?? ""
-
-        // Quick local check: is this likely a bank/financial SMS?
-        // Indian bank senders follow patterns like: VM-HDFCBK, AD-ICICIB, JD-SBIINB
-        // If it's clearly not financial, skip the server call
-        if !isLikelyFinancialSMS(sender: sender, body: body) {
-            let response = ILMessageFilterQueryResponse()
-            response.action = .none // Let iOS handle normally
-            completion(response)
-            return
-        }
-
-        // Defer to server — this sends the SMS content to our backend
-        // The backend will parse the transaction and store it
-        let response = ILMessageFilterQueryResponse()
-        response.action = .none
-
-        // Use network extension to forward to our server
+        // Always defer to server for all unknown sender messages.
+        // The server will determine if it's a financial SMS and store it.
         context.deferQueryRequestToNetwork { networkResponse, error in
             let finalResponse = ILMessageFilterQueryResponse()
 

@@ -38,12 +38,18 @@ router.post("/filter-sms", async (req, res) => {
   try {
     const body = req.body;
 
-    // Extract sender and message from Apple's format
-    const sender: string = body?.query?.sender ?? "";
-    const messageText: string = body?.query?.message?.text ?? "";
+    // Apple's ILMessageFilterExtension sends:
+    // { "_sf": "VM-HDFCBK", "_smb": "INR 2,450.00 debited..." }
+    // Also support the documented query format as fallback
+    const sender: string =
+      body?._sf ?? body?.query?.sender ?? body?.sender ?? "";
+    const messageText: string =
+      body?._smb ?? body?.query?.message?.text ?? body?.message ?? "";
+
+    console.log(`[SMS Filter] Raw body keys: ${Object.keys(body || {}).join(", ")}`);
 
     if (!sender || !messageText) {
-      // Not a valid request — allow through
+      console.log(`[SMS Filter] Missing sender or message, allowing through`);
       return res.json({ action: 0 });
     }
 
