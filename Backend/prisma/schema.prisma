@@ -1,0 +1,39 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Transaction {
+  id        String   @id @default(cuid())
+  amount    Float
+  type      TransactionType
+  bank      String?
+  account   String?  // last 4 digits of account
+  card      String?  // last 4 digits of card
+  merchant  String?
+  channel   String?  // UPI, IMPS, NEFT, RTGS, POS, ATM, NETBANKING
+  upiRef    String?
+  impsRef   String?
+  balance   Float?
+  sender    String   // SMS sender ID (e.g., VM-HDFCBK)
+  rawMessage String  // Full SMS body for debugging
+  smsDate   DateTime? // Date extracted from SMS
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Prevent duplicate processing of the same SMS
+  @@unique([sender, rawMessage])
+  @@index([type])
+  @@index([bank])
+  @@index([createdAt])
+  @@index([channel])
+}
+
+enum TransactionType {
+  debit
+  credit
+}

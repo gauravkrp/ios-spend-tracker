@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleDevelopmentRegion</key>
+    <string>$(DEVELOPMENT_LANGUAGE)</string>
+    <key>CFBundleDisplayName</key>
+    <string>SpendTracker Filter</string>
+    <key>CFBundleExecutable</key>
+    <string>$(EXECUTABLE_NAME)</string>
+    <key>CFBundleIdentifier</key>
+    <string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+    <key>CFBundleInfoDictionaryVersion</key>
+    <string>6.0</string>
+    <key>CFBundleName</key>
+    <string>$(PRODUCT_NAME)</string>
+    <key>CFBundlePackageType</key>
+    <string>$(PRODUCT_BUNDLE_PACKAGE_TYPE)</string>
+    <key>CFBundleShortVersionString</key>
+    <string>1.0</string>
+    <key>CFBundleVersion</key>
+    <string>1</string>
+    <key>NSExtension</key>
+    <dict>
+        <key>NSExtensionPointIdentifier</key>
+        <string>com.apple.identitylookup.message-filter</string>
+        <key>NSExtensionPrincipalClass</key>
+        <string>$(PRODUCT_MODULE_NAME).MessageFilterExtension</string>
+    </dict>
+    <!--
+        IMPORTANT: Set this to your backend's URL.
+        Apple will POST the SMS content to this URL when the extension
+        defers to network via `deferQueryRequestToNetwork`.
+
+        The request body format is:
+        {
+            "_version": 1,
+            "query": {
+                "sender": "VM-HDFCBK",
+                "message": { "text": "INR 2,450.00 debited from..." }
+            }
+        }
+
+        Your server must respond with:
+        {
+            "action": 0|1|2|3  (0=none, 1=allow, 2=junk, 3=promotion)
+        }
+    -->
+    <key>ILMessageFilterExtensionNetworkURL</key>
+    <string>https://your-server.com/api/filter-sms</string>
+</dict>
+</plist>

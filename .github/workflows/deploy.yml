@@ -1,0 +1,39 @@
+name: Deploy Backend
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'Backend/**'
+      - 'docker-compose.yml'
+      - '.github/workflows/deploy.yml'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to VPS
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: root
+          key: ${{ secrets.VPS_SSH_KEY }}
+          passphrase: ${{ secrets.VPS_SSH_PASSPHRASE }}
+          script: |
+            cd /root/spendtracker
+
+            # Pull latest code
+            git pull origin main
+
+            # Rebuild and restart
+            docker compose build --no-cache backend
+            docker compose up -d --remove-orphans
+
+            # Wait for health check
+            sleep 10
+            curl -sf http://localhost:3200/health || exit 1
+
+            # Clean up old images
+            docker image prune -f
+
+            echo "Deploy complete!"
