@@ -46,7 +46,7 @@ router.post("/filter-sms", async (req, res) => {
     const messageText: string =
       body?._smb ?? body?.query?.message?.text ?? body?.message ?? "";
 
-    console.log(`[SMS Filter] Raw body keys: ${Object.keys(body || {}).join(", ")}`);
+    console.log(`[SMS Filter] Raw body: ${JSON.stringify(body).substring(0, 500)}`);
 
     if (!sender || !messageText) {
       console.log(`[SMS Filter] Missing sender or message, allowing through`);
