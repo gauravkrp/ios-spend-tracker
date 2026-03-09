@@ -35,7 +35,7 @@ struct TransactionRow: View {
                     }
                 }
 
-                Text(transaction.createdAt, style: .relative)
+                Text(formattedDateTime)
                     .font(.caption2)
                     .foregroundStyle(.tertiary)
             }
@@ -62,6 +62,28 @@ struct TransactionRow: View {
         }
         .padding(.vertical, 8)
         .padding(.horizontal, 4)
+    }
+
+    private var formattedDateTime: String {
+        let cal = Calendar.current
+        let now = Date()
+        if cal.isDateInToday(transaction.createdAt) {
+            let fmt = DateFormatter()
+            fmt.dateFormat = "h:mm a"
+            return "Today, \(fmt.string(from: transaction.createdAt))"
+        } else if cal.isDateInYesterday(transaction.createdAt) {
+            let fmt = DateFormatter()
+            fmt.dateFormat = "h:mm a"
+            return "Yesterday, \(fmt.string(from: transaction.createdAt))"
+        } else if cal.dateComponents([.day], from: transaction.createdAt, to: now).day ?? 0 < 7 {
+            let fmt = DateFormatter()
+            fmt.dateFormat = "EEEE, h:mm a"
+            return fmt.string(from: transaction.createdAt)
+        } else {
+            let fmt = DateFormatter()
+            fmt.dateFormat = "d MMM, h:mm a"
+            return fmt.string(from: transaction.createdAt)
+        }
     }
 
     private var iconName: String {

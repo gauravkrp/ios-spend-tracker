@@ -48,6 +48,7 @@ struct SpendingSummary: Codable {
     let totalReceived: Double
     let transactionCount: Int
     let byBank: [BankSummary]
+    let byAccount: [AccountSummary]
     let byChannel: [ChannelSummary]
     let byDay: [DailySummary]
 }
@@ -58,6 +59,17 @@ struct BankSummary: Codable, Identifiable {
     let spent: Double
     let received: Double
     let count: Int
+}
+
+struct AccountSummary: Codable, Identifiable {
+    var id: String { label }
+    let label: String        // e.g. "ICICI Bank ••301"
+    let bank: String
+    let account: String      // last 4 digits or "N/A"
+    let spent: Double
+    let received: Double
+    let count: Int
+    let lastTransactionAt: Date
 }
 
 struct ChannelSummary: Codable, Identifiable {

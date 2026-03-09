@@ -2,7 +2,6 @@ import SwiftUI
 
 struct DashboardView: View {
     @StateObject private var api = APIService()
-    @State private var selectedTab = 0
     @State private var selectedPeriod: TimePeriod = .month
 
     enum TimePeriod: String, CaseIterable {
@@ -17,18 +16,26 @@ struct DashboardView: View {
             case .quarter: return 90
             }
         }
+
+        var label: String {
+            switch self {
+            case .week: return "This Week"
+            case .month: return "This Month"
+            case .quarter: return "3 Months"
+            }
+        }
     }
 
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 20) {
-                    // MARK: - Setup Banner
+                    // Setup Banner
                     if api.transactions.isEmpty && !api.isLoading {
                         setupBanner
                     }
 
-                    // MARK: - Period Selector
+                    // Period Selector
                     Picker("Period", selection: $selectedPeriod) {
                         ForEach(TimePeriod.allCases, id: \.self) { period in
                             Text(period.rawValue).tag(period)
@@ -37,17 +44,22 @@ struct DashboardView: View {
                     .pickerStyle(.segmented)
                     .padding(.horizontal)
 
-                    // MARK: - Summary Cards
+                    // Overall Summary
                     if let summary = api.summary {
-                        summaryCards(summary)
+                        overallSummary(summary)
                     }
 
-                    // MARK: - Bank Breakdown
-                    if let summary = api.summary, !summary.byBank.isEmpty {
-                        bankBreakdownSection(summary.byBank)
+                    // Account Breakdown
+                    if let summary = api.summary, !summary.byAccount.isEmpty {
+                        accountBreakdownSection(summary.byAccount)
                     }
 
-                    // MARK: - Recent Transactions
+                    // Daily Breakdown
+                    if let summary = api.summary, !summary.byDay.isEmpty {
+                        dailyBreakdownSection(summary.byDay)
+                    }
+
+                    // Recent Transactions
                     recentTransactionsSection
                 }
                 .padding(.vertical)
@@ -60,7 +72,7 @@ struct DashboardView: View {
                 await refresh()
             }
             .onChange(of: selectedPeriod) {
-                Task { await api.fetchSummary(days: selectedPeriod.days) }
+                Task { await refresh() }
             }
         }
     }
@@ -96,73 +108,183 @@ struct DashboardView: View {
         .padding(.horizontal)
     }
 
-    // MARK: - Summary Cards
+    // MARK: - Overall Summary
 
-    private func summaryCards(_ summary: SpendingSummary) -> some View {
-        HStack(spacing: 12) {
-            SummaryCard(
-                title: "Spent",
-                amount: summary.totalSpent,
-                icon: "arrow.up.circle.fill",
-                color: .red
-            )
-            SummaryCard(
-                title: "Received",
-                amount: summary.totalReceived,
-                icon: "arrow.down.circle.fill",
-                color: .green
-            )
-            SummaryCard(
-                title: "Txns",
-                amount: Double(summary.transactionCount),
-                icon: "number.circle.fill",
-                color: .blue,
-                isCount: true
-            )
-        }
-        .padding(.horizontal)
-    }
+    private func overallSummary(_ summary: SpendingSummary) -> some View {
+        VStack(spacing: 12) {
+            Text(selectedPeriod.label)
+                .font(.caption)
+                .foregroundStyle(.secondary)
 
-    // MARK: - Bank Breakdown
-
-    private func bankBreakdownSection(_ banks: [BankSummary]) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("By Bank")
-                .font(.headline)
-                .padding(.horizontal)
-
-            ForEach(banks.sorted(by: { $0.spent > $1.spent })) { bank in
-                HStack {
-                    VStack(alignment: .leading) {
-                        Text(bank.bank)
-                            .font(.subheadline.bold())
-                        Text("\(bank.count) transactions")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                    Spacer()
-                    VStack(alignment: .trailing) {
-                        Text("₹\(bank.spent, specifier: "%.0f")")
-                            .font(.subheadline.bold())
-                            .foregroundStyle(.red)
-                        if bank.received > 0 {
-                            Text("+₹\(bank.received, specifier: "%.0f")")
-                                .font(.caption)
-                                .foregroundStyle(.green)
-                        }
-                    }
+            HStack(spacing: 24) {
+                VStack(spacing: 4) {
+                    Text("Total Debited")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Text("₹\(summary.totalSpent, specifier: "%.0f")")
+                        .font(.title2.bold())
+                        .foregroundStyle(.red)
                 }
-                .padding(.horizontal)
-                .padding(.vertical, 8)
+
+                Rectangle()
+                    .fill(.quaternary)
+                    .frame(width: 1, height: 40)
+
+                VStack(spacing: 4) {
+                    Text("Total Credited")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Text("₹\(summary.totalReceived, specifier: "%.0f")")
+                        .font(.title2.bold())
+                        .foregroundStyle(.green)
+                }
+
+                Rectangle()
+                    .fill(.quaternary)
+                    .frame(width: 1, height: 40)
+
+                VStack(spacing: 4) {
+                    Text("Txns")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Text("\(summary.transactionCount)")
+                        .font(.title2.bold())
+                        .foregroundStyle(.blue)
+                }
             }
         }
-        .padding(.vertical, 8)
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 20)
         .background(
             RoundedRectangle(cornerRadius: 16)
                 .fill(.background)
                 .shadow(color: .black.opacity(0.05), radius: 8)
         )
         .padding(.horizontal)
+    }
+
+    // MARK: - Account Breakdown
+
+    private func accountBreakdownSection(_ accounts: [AccountSummary]) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("By Account")
+                .font(.headline)
+                .padding(.horizontal)
+
+            ForEach(accounts.sorted(by: { $0.spent > $1.spent })) { acct in
+                HStack(spacing: 12) {
+                    // Bank icon
+                    ZStack {
+                        Circle()
+                            .fill(.blue.opacity(0.1))
+                            .frame(width: 36, height: 36)
+                        Text(String(acct.bank.prefix(2)))
+                            .font(.caption.bold())
+                            .foregroundStyle(.blue)
+                    }
+
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(acct.label)
+                            .font(.subheadline.bold())
+                        Text("\(acct.count) txns")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
+
+                    Spacer()
+
+                    VStack(alignment: .trailing, spacing: 2) {
+                        if acct.spent > 0 {
+                            Text("-₹\(acct.spent, specifier: "%.0f")")
+                                .font(.subheadline.bold())
+                                .foregroundStyle(.red)
+                        }
+                        if acct.received > 0 {
+                            Text("+₹\(acct.received, specifier: "%.0f")")
+                                .font(.caption)
+                                .foregroundStyle(.green)
+                        }
+                    }
+                }
+                .padding(.horizontal)
+                .padding(.vertical, 6)
+            }
+        }
+        .padding(.vertical, 12)
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(.background)
+                .shadow(color: .black.opacity(0.05), radius: 8)
+        )
+        .padding(.horizontal)
+    }
+
+    // MARK: - Daily Breakdown
+
+    private func dailyBreakdownSection(_ days: [DailySummary]) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("By Day")
+                .font(.headline)
+                .padding(.horizontal)
+
+            ForEach(days.reversed()) { day in
+                HStack {
+                    Text(formatDate(day.date))
+                        .font(.subheadline)
+                        .frame(width: 90, alignment: .leading)
+
+                    Spacer()
+
+                    if day.spent > 0 {
+                        Text("-₹\(day.spent, specifier: "%.0f")")
+                            .font(.subheadline.bold())
+                            .foregroundStyle(.red)
+                            .frame(width: 90, alignment: .trailing)
+                    } else {
+                        Text("—")
+                            .font(.subheadline)
+                            .foregroundStyle(.quaternary)
+                            .frame(width: 90, alignment: .trailing)
+                    }
+
+                    if day.received > 0 {
+                        Text("+₹\(day.received, specifier: "%.0f")")
+                            .font(.subheadline)
+                            .foregroundStyle(.green)
+                            .frame(width: 90, alignment: .trailing)
+                    } else {
+                        Text("—")
+                            .font(.subheadline)
+                            .foregroundStyle(.quaternary)
+                            .frame(width: 90, alignment: .trailing)
+                    }
+                }
+                .padding(.horizontal)
+                .padding(.vertical, 4)
+
+                if day.id != days.first?.id {
+                    Divider().padding(.horizontal)
+                }
+            }
+        }
+        .padding(.vertical, 12)
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(.background)
+                .shadow(color: .black.opacity(0.05), radius: 8)
+        )
+        .padding(.horizontal)
+    }
+
+    private func formatDate(_ isoDate: String) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        guard let date = formatter.date(from: isoDate) else { return isoDate }
+        let display = DateFormatter()
+        display.dateFormat = "d MMM"
+        if Calendar.current.isDateInToday(date) { return "Today" }
+        if Calendar.current.isDateInYesterday(date) { return "Yesterday" }
+        return display.string(from: date)
     }
 
     // MARK: - Recent Transactions
@@ -231,43 +353,6 @@ struct StepRow: View {
                 .background(Circle().fill(.blue.opacity(0.15)))
             Text(text)
         }
-    }
-}
-
-struct SummaryCard: View {
-    let title: String
-    let amount: Double
-    let icon: String
-    let color: Color
-    var isCount: Bool = false
-
-    var body: some View {
-        VStack(spacing: 8) {
-            Image(systemName: icon)
-                .font(.title2)
-                .foregroundStyle(color)
-
-            Text(title)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-
-            if isCount {
-                Text("\(Int(amount))")
-                    .font(.title3.bold())
-            } else {
-                Text("₹\(amount, specifier: "%.0f")")
-                    .font(.subheadline.bold())
-                    .minimumScaleFactor(0.7)
-                    .lineLimit(1)
-            }
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 16)
-        .background(
-            RoundedRectangle(cornerRadius: 16)
-                .fill(.background)
-                .shadow(color: .black.opacity(0.05), radius: 8)
-        )
     }
 }
 

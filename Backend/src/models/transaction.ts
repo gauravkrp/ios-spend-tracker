@@ -132,6 +132,32 @@ export async function getSpendingSummary(days: number = 30) {
     bankMap.set(bank, existing);
   }
 
+  // By account (bank + account/card)
+  const accountMap = new Map<
+    string,
+    { bank: string; account: string; spent: number; received: number; count: number; lastTransactionAt: string }
+  >();
+  for (const t of transactions) {
+    const bank = t.bank ?? "Unknown";
+    const acctNum = t.card ?? t.account ?? "N/A";
+    const label = acctNum !== "N/A" ? `${bank} ••${acctNum}` : bank;
+    const existing = accountMap.get(label) ?? {
+      bank,
+      account: acctNum,
+      spent: 0,
+      received: 0,
+      count: 0,
+      lastTransactionAt: t.createdAt.toISOString(),
+    };
+    if (t.type === "debit") existing.spent += t.amount;
+    else existing.received += t.amount;
+    existing.count++;
+    if (t.createdAt.toISOString() > existing.lastTransactionAt) {
+      existing.lastTransactionAt = t.createdAt.toISOString();
+    }
+    accountMap.set(label, existing);
+  }
+
   // By channel
   const channelMap = new Map<string, { amount: number; count: number }>();
   for (const t of transactions) {
@@ -158,6 +184,10 @@ export async function getSpendingSummary(days: number = 30) {
     transactionCount: transactions.length,
     byBank: Array.from(bankMap.entries()).map(([bank, data]) => ({
       bank,
+      ...data,
+    })),
+    byAccount: Array.from(accountMap.entries()).map(([label, data]) => ({
+      label,
       ...data,
     })),
     byChannel: Array.from(channelMap.entries()).map(([channel, data]) => ({
