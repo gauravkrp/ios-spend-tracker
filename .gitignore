@@ -13,9 +13,7 @@ Backend/.env
 .DS_Store
 *.swp
 
-# Xcode
-*.xcodeproj
-*.xcworkspace
+# Xcode user data
 DerivedData/
 build/
 *.pbxuser

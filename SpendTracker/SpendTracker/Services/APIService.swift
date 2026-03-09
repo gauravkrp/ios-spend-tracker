@@ -7,12 +7,20 @@ class APIService: ObservableObject {
     // IMPORTANT: Update this to your actual backend URL
     // For local development with a physical device, use your Mac's local IP
     // For production, use your deployed server URL
-    static let baseURL = "https://your-server.com/api"
+    static let baseURL = "https://spendtracker.gauravkrp.com/api"
 
     @Published var transactions: [Transaction] = []
     @Published var summary: SpendingSummary?
     @Published var isLoading = false
     @Published var error: String?
+
+    private static let apiKey = "c4c5f681d553f6ee676ce6fb07cfc2e4c214abf726683a8c493f74b6d9f794a5"
+
+    private func authenticatedRequest(url: URL) -> URLRequest {
+        var request = URLRequest(url: url)
+        request.setValue(Self.apiKey, forHTTPHeaderField: "x-api-key")
+        return request
+    }
 
     private let decoder: JSONDecoder = {
         let d = JSONDecoder()
@@ -55,7 +63,8 @@ class APIService: ObservableObject {
         components.queryItems = queryItems
 
         do {
-            let (data, response) = try await URLSession.shared.data(from: components.url!)
+            let request = authenticatedRequest(url: components.url!)
+            let (data, response) = try await URLSession.shared.data(for: request)
             guard let httpResponse = response as? HTTPURLResponse,
                   httpResponse.statusCode == 200 else {
                 throw APIError.badResponse
@@ -75,7 +84,8 @@ class APIService: ObservableObject {
     func fetchSummary(days: Int = 30) async {
         do {
             let url = URL(string: "\(Self.baseURL)/transactions/summary?days=\(days)")!
-            let (data, response) = try await URLSession.shared.data(from: url)
+            let request = authenticatedRequest(url: url)
+            let (data, response) = try await URLSession.shared.data(for: request)
             guard let httpResponse = response as? HTTPURLResponse,
                   httpResponse.statusCode == 200 else {
                 throw APIError.badResponse
@@ -91,7 +101,7 @@ class APIService: ObservableObject {
 
     func deleteTransaction(id: String) async -> Bool {
         do {
-            var request = URLRequest(url: URL(string: "\(Self.baseURL)/transactions/\(id)")!)
+            var request = authenticatedRequest(url: URL(string: "\(Self.baseURL)/transactions/\(id)")!)
             request.httpMethod = "DELETE"
             let (_, response) = try await URLSession.shared.data(for: request)
             guard let httpResponse = response as? HTTPURLResponse,

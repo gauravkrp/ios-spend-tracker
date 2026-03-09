@@ -5,7 +5,7 @@
     <key>CFBundleDevelopmentRegion</key>
     <string>$(DEVELOPMENT_LANGUAGE)</string>
     <key>CFBundleDisplayName</key>
-    <string>SpendTracker</string>
+    <string>SpendTracker Filter</string>
     <key>CFBundleExecutable</key>
     <string>$(EXECUTABLE_NAME)</string>
     <key>CFBundleIdentifier</key>
@@ -20,27 +20,14 @@
     <string>1.0</string>
     <key>CFBundleVersion</key>
     <string>1</string>
-    <key>LSRequiresIPhoneOS</key>
-    <true/>
-    <key>UIApplicationSceneManifest</key>
+    <key>NSExtension</key>
     <dict>
-        <key>UIApplicationSupportsMultipleScenes</key>
-        <false/>
+        <key>NSExtensionPointIdentifier</key>
+        <string>com.apple.identitylookup.message-filter</string>
+        <key>NSExtensionPrincipalClass</key>
+        <string>$(PRODUCT_MODULE_NAME).MessageFilterExtension</string>
     </dict>
-    <key>UILaunchScreen</key>
-    <dict/>
-    <key>UISupportedInterfaceOrientations</key>
-    <array>
-        <string>UIInterfaceOrientationPortrait</string>
-    </array>
-    <key>NSAppTransportSecurity</key>
-    <dict>
-        <!--
-            For development only: allow HTTP connections.
-            Remove this for production and use HTTPS.
-        -->
-        <key>NSAllowsArbitraryLoads</key>
-        <true/>
-    </dict>
+    <key>ILMessageFilterExtensionNetworkURL</key>
+    <string>https://spendtracker.gauravkrp.com/api/filter-sms</string>
 </dict>
 </plist>
