@@ -37,6 +37,19 @@ app.use("/api", filterRoutes);
 // App API endpoints — optional auth
 app.use("/api/transactions", authMiddleware, transactionRoutes);
 
+// Apple App Site Association — required for ILMessageFilterExtension Associated Domains
+app.get("/.well-known/apple-app-site-association", (_req, res) => {
+  res.setHeader("Content-Type", "application/json");
+  res.json({
+    messagefilter: {
+      apps: [
+        "5LSKNM4697.com.gauravkrp.SpendTracker",
+        "5LSKNM4697.com.gauravkrp.SpendTracker.MessageFilter",
+      ],
+    },
+  });
+});
+
 // Health check
 app.get("/health", (_req, res) => {
   res.json({ status: "ok", timestamp: new Date().toISOString() });
